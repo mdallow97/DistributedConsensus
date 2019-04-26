@@ -82,7 +82,7 @@ class ClusterNode:
 				continue
 
 			else:
-
+				# Start a new election if timeout and havent received a heartbeat
 				if self.rcvdHeartbeat:
 					self.rcvdHeartbeat = False
 					continue

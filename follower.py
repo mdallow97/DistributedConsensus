@@ -7,6 +7,8 @@ import socket, pickle
 
 class Follower(threading.Thread):
     def __init__(self, s, cluster_node):
+
+        # Initialize class variables
         self.s              = s
         self.cluster_node   = cluster_node
         self.shouldEnd      = False
@@ -17,44 +19,49 @@ class Follower(threading.Thread):
         self.shouldEnd = True
 
     def run(self):
+        # Connect to socket
         self.s.connect((self.cluster_node.IP, self.cluster_node.port))
         print("Follower addr: ", self.cluster_node.IP, "\tport: ", str(self.cluster_node.port))
+
+        # Threads for receiving user commands and leader messages
+        usr_msg_thread  = threading.Thread(target=self.parseConsoleCommand)
+        ldr_msg_thread  = threading.Thread(target=self.rcvLeaderMessage)
+
+        usr_msg_thread.start()
+        ldr_msg_thread.start()
+
+        usr_msg_thread.join()
+        ldr_msg_thread.join()
+
+
+    # Delegates parsing of a user command
+    def parseConsoleCommand(self):
+
         print("Enter command: ")
-
-        get_msg_thread  = threading.Thread(target=self.parse)
-        rcv_msg_thread  = threading.Thread(target=self.receiveMessage)
-
-        get_msg_thread.start()
-        rcv_msg_thread.start()
-
-        rcv_msg_thread.join()
-        get_msg_thread.join()
-
-
-    #used by follower
-    def parse(self):
-        while 1:
-            if self.shouldEnd:
-                break
+        while not self.shouldEnd:
 
             message = input()
-
             command = parse.parseClientMessage(message)
 
             if command.getCommand() == "error":
                 continue
 
+            # End follower if 'exit' is entered
             elif command.getCommand() == "exit":
                 self.shouldEnd = True
                 self.s.send(pickle.dumps(command))
                 break
 
+            # Send parsed command to leader
             data_bytes = pickle.dumps(command)
             self.s.send(data_bytes)
 
-    # used by follower
-    def receiveMessage(self):
+
+    # Receive and process leader command
+    def rcvLeaderMessage(self):
         while not self.shouldEnd:
+
+            # Receive message
             data = None
             data = self.s.recv(self.cluster_node.BUFFER_SIZE)
 
@@ -67,9 +74,9 @@ class Follower(threading.Thread):
 
                 elif response.getCommand() == "heartbeat":
 					# reset timeout
-                    for follower in response.getParams():
-                        self.cluster_node.follower_ips.append(follower)
+                    # for follower in response.getParams():
 
-                        self.cluster_node.rcvdHeartbeat = True
+                    self.cluster_node.follower_ips = response.getParams()
+                    self.cluster_node.rcvdHeartbeat = True
                 else:
                     process.processCommand(response, self.cluster_node)
