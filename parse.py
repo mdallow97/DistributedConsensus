@@ -1,5 +1,7 @@
 # parse.py
 
+# This class is passed back and forth from followers to leader.
+# It simplifies parsing and receiving the commands
 class Command:
 	def __init__(self, command, params, returns_val):
 		self.command = command
@@ -77,7 +79,7 @@ def parseClientMessage(message):
 
 		param = param + message[i]
 
-	# Check parameters
+	# CHECK PARAMETERS
 	if command == "ClientCommit":
 		# Command will have only one or two parameters
 		# ClienCommit(!<var>) or ClientCommit(<var>, <value>)
