@@ -44,8 +44,9 @@ class Leader(threading.Thread):
             add_client_thread = threading.Thread(target=self.addNewClient, args=(conn, addr))
 
             add_client_thread.start()
-            add_client_thread.join()
 
+
+        add_client_thread.join()
         conn.close()
         print("Connection closed")
 
