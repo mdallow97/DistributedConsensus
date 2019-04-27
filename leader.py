@@ -37,6 +37,15 @@ class Leader(threading.Thread):
             conn, addr = self.s.accept()
             print("Connection from address:", addr)
 
+            # Log replication for new followers
+            log = open("log.txt", 'r')
+            contents = ""
+            for line in log:
+                contents += line
+            log.close()
+
+            conn.send(pickle.dumps(parse.Command("log", [contents], False)))
+
             # Append new follower to followers
             self.cluster_node.followers.append(conn)
 
@@ -49,6 +58,7 @@ class Leader(threading.Thread):
         add_client_thread.join()
         conn.close()
         print("Connection closed")
+
 
 
     def addNewClient(self, conn, addr):
@@ -78,15 +88,17 @@ class Leader(threading.Thread):
         conn.close()
         self.cluster_node.followers.remove(conn)
 
+
     # Constantly checking to see if the leader thread should end
     def quitThread(self, conn):
         while 1:
             if self.shouldEnd:
                 conn.close()
 
+
     # Sends out heartbeat to all followers
     def heartbeatTimer(self):
         heartbeat_cmd = parse.Command("heartbeat", self.cluster_node.follower_ips, False)
         while not self.shouldEnd:
-            time.sleep(7)
+            time.sleep(7) # should be 30 seconds
             self.cluster_node.broadcast(heartbeat_cmd)
