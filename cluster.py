@@ -23,13 +23,15 @@ class ClusterNode:
 		self.rcvdHeartbeat	= False
 		self.node_thread	= None
 
-		self.log			= open("log.txt", 'w')
-		self.log.truncate(0)
-		self.log.close()
 
 		for flr in follower_ips:
 			self.follower_ips.append(flr)
 		self.follower_ips.append(self.IP)
+
+		# Erase file
+		log			= open("log.txt", 'w')
+		log.truncate(0)
+		log.close()
 
 		# Open socket
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -67,13 +69,16 @@ class ClusterNode:
 		while not self.shouldEnd:
 			time.sleep(self.getTimeout())
 
-			# If the node is a leader, and it timesout
+			# If the node is a leader, and it times out
 			if self.isLeader():
+				continue # GET RID OF THIS SO THAT LEADER TIMES OUT
 
 				# End leader thread
 				self.node_thread.end()
 				self.node_thread.join()
 				self.state = "follower"
+
+				print("I am no longer the leader")
 
 				# Prepare new socket, and start follower thread
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

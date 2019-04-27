@@ -114,6 +114,12 @@ def parseClientMessage(message):
 			printErrorMessage(command)
 			return Command("error", [], False)
 
+	elif command == "dumpLog":
+		#dumpLog(<id>)
+		if len(params) != 1:
+			printErrorMessage(command)
+			return Command("error", [], False)
+
 	elif command == "exit":
 		return Command(command, [], False)
 	else:
