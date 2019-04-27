@@ -50,7 +50,7 @@ class Leader(threading.Thread):
             self.cluster_node.followers.append(conn)
 
             # Handles adding clients and receiving messages
-            add_client_thread = threading.Thread(target=self.addNewClient, args=(conn, addr))
+            add_client_thread = threading.Thread(target=self.receiveFromClient, args=(conn, addr))
 
             add_client_thread.start()
 
@@ -60,8 +60,7 @@ class Leader(threading.Thread):
         print("Connection closed")
 
 
-
-    def addNewClient(self, conn, addr):
+    def receiveFromClient(self, conn, addr):
         threading.Thread(target=self.quitThread, args=(conn,)).start()
 
         while not self.shouldEnd:

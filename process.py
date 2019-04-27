@@ -18,6 +18,10 @@ def processCommand(command, cluster_node):
         # RequestVote(<term>, <id>)
         return RequestVote(command, cluster_node)
 
+    elif command.getCommand() == "dumpLog":
+        # dumpLog(<id>)
+        return dumpLog(command, cluster_node)
+
 # Returns Success! or Failed!
 def ClientCommit(command, cluster_node):
     # ClienCommit(!<var>) or ClientCommit(<var>, <value>)
@@ -131,3 +135,17 @@ def AppendEntries(command, commit_index):
 def RequestVote(command, cluster_node):
     # RequestVote(<term>, <id>)
     print("vote")
+
+def dumpLog(command, cluster_node):
+    # dumpLog(<id>)
+    id = command.getParams()[0]
+    log = open("log.txt", 'r')
+
+    contents = "\n\tMOST RECENT INDEX (TOP)\n"
+
+    for line in log:
+        contents += line
+
+    contents += "\n\tOLDEST INDEX (BOTTOM)\n"
+
+    return contents
