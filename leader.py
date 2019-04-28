@@ -76,9 +76,10 @@ class Leader(threading.Thread):
 
             # Returns something to be printed on both leader and followers
             status = process.processCommand(command, self.cluster_node)
-            print(status)
-            # Send command to print the status
-            conn.send(pickle.dumps(parse.Command("print", [status], False)))
+            if status:
+                print(status)
+                # Send command to print the status
+                conn.send(pickle.dumps(parse.Command("print", [status], False)))
 
             # Once leader has finished the operation, all followers must do the same (as long as it is not a retrieval)
             if not command.shouldReturnVal():
