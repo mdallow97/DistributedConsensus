@@ -2,16 +2,19 @@
 import parse
 
 # Delegate processing of command to below functions
-def processCommand(command, cluster_node):
+def processCommand(command, cluster_node, addr=None):
 
     # FOLLOWER COMMANDS
     if command.getCommand() == "ClientCommit":
         # ClienCommit(!<var>) or ClientCommit(<var>, <value>)
         return ClientCommit(command, cluster_node)
 
-    elif command.getCommand() == "dumpLog":
+    elif command.getCommand() == "dumpLog" or command.getCommand() == "LogRequest":
         # dumpLog(<id>)
         return dumpLog(command, cluster_node)
+
+    elif command.getCommand() == "LogReturn":
+        return LogReturn(command, cluster_node, addr)
 
     elif command.getCommand() == "RequestVote":
         # RequestVote(<term>, <id>)
@@ -65,7 +68,7 @@ def AppendEntries(command, cluster_node):
     if command.shouldReturnVal():
         # Find start and end indexes for <value>
         if params[1] not in contents:
-            return "Failed!"
+            return  parse.Command("print", ["Failed!"])
 
         index = contents.find(params[1])
         var = contents[index:index+len(params[1])]
@@ -76,7 +79,7 @@ def AppendEntries(command, cluster_node):
         end_index = temp.index('\n')+start_index
         val = contents[start_index:end_index]
 
-        return val
+        return  parse.Command("print", [val])
 
     else:
         # New value to be added to the beginning of the file
@@ -93,10 +96,10 @@ def AppendEntries(command, cluster_node):
 
         except IOError:
             if command.getCommand() == "AppendEntries!":
-                return "Failed!"
+                return parse.Command("print", ["Failed!"])
 
     if command.getCommand() == "AppendEntries!":
-        return "Success!"
+        return parse.Command("print", ["Success!"])
 
 
 def RequestVote(command, cluster_node):
@@ -107,13 +110,35 @@ def RequestVote(command, cluster_node):
 def dumpLog(command, cluster_node):
     # dumpLog(<id>)
     id = command.getParams()[0]
-    log = open("log.txt", 'r')
 
-    contents = "\n\tMOST RECENT INDEX (TOP)\n"
+    original_id = ""
+    if len(command.getParams()) == 1:
+        command.addParam(cluster_node.IP)
+        original_id = cluster_node.IP
+    else:
+        original_id = command.getParams()[1]
 
-    for line in log:
-        contents += line
+    if id == cluster_node.IP:
+        log = open("log.txt", 'r')
+        contents = "\n\tMOST RECENT INDEX (TOP)\n"
 
-    contents += "\n\tOLDEST INDEX (BOTTOM)\n"
+        for line in log:
+            contents += line
 
-    return contents
+        contents += "\n\tOLDEST INDEX (BOTTOM)\n"
+
+        return parse.Command("print", [contents, original_id])
+    elif cluster_node.isLeader():
+        logRequest = parse.Command("LogRequest", [id, original_id])
+        cluster_node.broadcast(logRequest)
+        return None
+    else:
+        return None
+
+def ReturnLog(command, cluster_node, addr):
+    params = command.getParams()
+
+    if params[1] != addr:
+        return
+    else:
+        return params[0]
