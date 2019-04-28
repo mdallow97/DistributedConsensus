@@ -3,7 +3,7 @@
 # This class is passed back and forth from followers to leader.
 # It simplifies parsing and receiving the commands
 class Command:
-	def __init__(self, command, params, returns_val):
+	def __init__(self, command, params, returns_val=False):
 		self.command = command
 		self.params = params
 		self.returns_val = returns_val
@@ -16,6 +16,9 @@ class Command:
 
 	def shouldReturnVal(self):
 		return self.returns_val
+
+	def addParam(self, param):
+		self.params.append(param)
 
 	def toString(self):
 		str = self.command + "("
@@ -85,22 +88,22 @@ def parseClientMessage(message):
 
 		if len(params) != 1 and len(params) != 2:
 			printErrorMessage(command)
-			return Command("error", [], False)
+			return Command("error", [])
 
 		if len(params) == 1 and not returns_val:
 			printErrorMessage(command)
-			return Command("error", [], False)
+			return Command("error", [])
 
 	elif command == "dumpLog":
 		#dumpLog(<id>)
 		if len(params) != 1:
 			printErrorMessage(command)
-			return Command("error", [], False)
+			return Command("error", [])
 
 	elif command == "exit":
-		return Command(command, [], False)
+		return Command(command, [])
 	else:
 		printErrorMessage(command)
-		return Command("error", [], False)
+		return Command("error", [])
 
 	return Command(command, params, returns_val)

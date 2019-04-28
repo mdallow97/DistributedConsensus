@@ -91,5 +91,12 @@ class Follower(threading.Thread):
 
                     self.cluster_node.follower_ips = response.getParams()
                     self.cluster_node.rcvdHeartbeat = True
+
+                # Requesting the log from this node
+                elif response.getCommand() == "LogRequest":
+                    returnLog = process.processCommand(response, self.cluster_node)
+                    if returnLog != None:
+                        self.s.send(pickle.dumps(returnLog))
+
                 else:
                     process.processCommand(response, self.cluster_node)

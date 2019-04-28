@@ -44,7 +44,7 @@ class Leader(threading.Thread):
                 contents += line
             log.close()
 
-            conn.send(pickle.dumps(parse.Command("log", [contents], False)))
+            conn.send(pickle.dumps(parse.Command("log", [contents])))
 
             # Append new follower to followers
             self.cluster_node.followers.append(conn)
@@ -75,11 +75,11 @@ class Leader(threading.Thread):
                 break
 
             # Returns something to be printed on both leader and followers
-            status = process.processCommand(command, self.cluster_node)
-            if status:
-                print(status)
-                # Send command to print the status
-                conn.send(pickle.dumps(parse.Command("print", [status], False)))
+            ret_cmd = process.processCommand(command, self.cluster_node, addr)
+
+            if ret_cmd:
+                print(ret_cmd.getParams()[0])
+                conn.send(pickle.dumps(ret_cmd))
 
             # Once leader has finished the operation, all followers must do the same (as long as it is not a retrieval)
             if not command.shouldReturnVal():
@@ -98,7 +98,7 @@ class Leader(threading.Thread):
 
     # Sends out heartbeat to all followers
     def heartbeatTimer(self):
-        heartbeat_cmd = parse.Command("heartbeat", self.cluster_node.follower_ips, False)
+        heartbeat_cmd = parse.Command("heartbeat", self.cluster_node.follower_ips)
         while not self.shouldEnd:
             time.sleep(7) # should be 30 seconds
             self.cluster_node.broadcast(heartbeat_cmd)
