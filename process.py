@@ -55,16 +55,11 @@ def AppendEntries(command, cluster_node):
     log = open("log.txt", 'r+')
     params = command.getParams()
 
-
-
-    print("This node's index: ", cluster_node.commit_index)
-    print("Leaders index: ", int(params[0]))
-
     # Need to make sure that the commit index is the same as the leader
     if cluster_node.commit_index != int(params[0]):
         # Replicate log and set commit_index
-
         return parse.Command("print", ["Failed!"])
+
 
     # Copy file contents into a string
     contents = ""

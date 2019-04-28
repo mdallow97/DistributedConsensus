@@ -90,7 +90,6 @@ class Follower(threading.Thread):
 
                 elif response.getCommand() == "heartbeat":
 					# reset timeout
-                    # for follower in response.getParams():
 
                     self.cluster_node.follower_ips = response.getParams()
                     self.cluster_node.rcvdHeartbeat = True

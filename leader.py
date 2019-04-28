@@ -14,14 +14,15 @@ class Leader(threading.Thread):
 
         threading.Thread.__init__(self)
 
+        # Heartbeat thread handles broadcasting the heartbeat to all followers
+        heartbeat_thread 	= threading.Thread(target=self.heartbeatTimer)
+
 
     def end(self):
         self.shouldEnd = True
 
     # This thread is responsible for handling new clients and broadcasting the heartbeat
     def run(self):
-        # Heartbeat thread handles broadcasting the heartbeat to all followers
-        heartbeat_thread 	= threading.Thread(target=self.heartbeatTimer)
 
         # Initialize incoming TCP connections
         self.s.bind((self.cluster_node.IP, self.cluster_node.port))
