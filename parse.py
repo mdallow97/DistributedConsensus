@@ -30,8 +30,7 @@ def printErrorMessage(command):
 	print("Invalid command: ", command)
 	print("\nAvailable commands:")
 	print("ClientCommit(!<var>)\nClientCommit(<var>, <value>)")
-	print("AppendEntries(<index>, !<var>)\nAppendEntries(<index>, <var>, <value>)")
-	print("RequestVote(<term>, <id>)")
+	print("dumpLog(<id>)")
 	print("exit()\n")
 
 def parseClientMessage(message):
@@ -89,28 +88,6 @@ def parseClientMessage(message):
 			return Command("error", [], False)
 
 		if len(params) == 1 and not returns_val:
-			printErrorMessage(command)
-			return Command("error", [], False)
-
-
-	elif command == "AppendEntries":
-		# Command will have only two or three parameters
-		# AppendEntries(<index>, !<var>) or AppendEntries(<index>, <var>, <value>)
-		if len(params) != 2 and len(params) != 3:
-			printErrorMessage(command)
-			return Command("error", [], False)
-
-		if len(params) == 2 and not returns_val:
-			printErrorMessage(command)
-			return Command("error", [], False)
-
-	elif command == "RequestVote":
-		# RequestVote(<term>, <id>)
-		if len(params) != 2:
-			printErrorMessage(command)
-			return Command("error", [], False)
-
-		if returns_val:
 			printErrorMessage(command)
 			return Command("error", [], False)
 
