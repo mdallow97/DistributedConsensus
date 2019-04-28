@@ -23,6 +23,19 @@ class Follower(threading.Thread):
         self.s.connect((self.cluster_node.IP, self.cluster_node.port))
         print("Follower addr: ", self.cluster_node.IP, "\tport: ", str(self.cluster_node.port))
 
+        # Get the log from the leader when first connecting
+        data = self.s.recv(self.cluster_node.BUFFER_SIZE)
+        if (data):
+            response = pickle.loads(data)
+
+            if response.getCommand() == "log":
+                log = open("log.txt", 'r+')
+                log.truncate(0)
+                log.write(response.getParams()[0])
+                log.close()
+
+
+
         # Threads for receiving user commands and leader messages
         usr_msg_thread  = threading.Thread(target=self.parseConsoleCommand)
         ldr_msg_thread  = threading.Thread(target=self.rcvLeaderMessage)
