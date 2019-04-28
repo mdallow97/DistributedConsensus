@@ -44,7 +44,7 @@ class Leader(threading.Thread):
                 contents += line
             log.close()
 
-            conn.send(pickle.dumps(parse.Command("log", [contents])))
+            conn.send(pickle.dumps(parse.Command("log", [contents, str(self.cluster_node.commit_index)])))
 
             # Append new follower to followers
             self.cluster_node.followers.append(conn)

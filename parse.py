@@ -3,7 +3,7 @@
 # This class is passed back and forth from followers to leader.
 # It simplifies parsing and receiving the commands
 class Command:
-	def __init__(self, command, params, returns_val=False):
+	def __init__(self, command, params=[], returns_val=False):
 		self.command = command
 		self.params = params
 		self.returns_val = returns_val
@@ -39,7 +39,7 @@ def printErrorMessage(command):
 def parseClientMessage(message):
 
 	if len(message) == 0:
-		return Command("error", [], False)
+		return Command("error")
 
 	# Parse command
 	command = ""
@@ -51,7 +51,7 @@ def parseClientMessage(message):
 
 	if not message[i] == '(':
 		printErrorMessage(command)
-		return Command("error", [], False)
+		return Command("error")
 
 	param = ""
 	params = []
@@ -88,22 +88,32 @@ def parseClientMessage(message):
 
 		if len(params) != 1 and len(params) != 2:
 			printErrorMessage(command)
-			return Command("error", [])
+			return Command("error")
 
 		if len(params) == 1 and not returns_val:
 			printErrorMessage(command)
-			return Command("error", [])
+			return Command("error")
 
 	elif command == "dumpLog":
 		#dumpLog(<id>)
 		if len(params) != 1:
 			printErrorMessage(command)
-			return Command("error", [])
+			return Command("error")
+
+		num_periods = 0
+		for c in params[0]:
+			if c == '.':
+				num_periods += 1
+
+		if num_periods != 3:
+			print("dumpLog: Invalid IP address")
+			return Command("error")
+
 
 	elif command == "exit":
-		return Command(command, [])
+		return Command(command)
 	else:
 		printErrorMessage(command)
-		return Command("error", [])
+		return Command("error")
 
 	return Command(command, params, returns_val)

@@ -32,6 +32,9 @@ class Follower(threading.Thread):
                 log = open("log.txt", 'r+')
                 log.truncate(0)
                 log.write(response.getParams()[0])
+
+                self.commit_index = int(response.getParams()[1])
+
                 log.close()
 
 

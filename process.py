@@ -37,17 +37,16 @@ def ClientCommit(command, cluster_node):
         # Broadcast
         read_entry = parse.Command("AppendEntries", [cluster_node.commit_index, params[0]], True)
         return AppendEntries(read_entry, cluster_node)
-    else:
+    elif cluster_node.isLeader():
+        new_entry = parse.Command("AppendEntries", [cluster_node.commit_index, params[0], params[1]])
 
-        new_entry = parse.Command("AppendEntries", [cluster_node.commit_index, params[0], params[1]], False)
         cluster_node.broadcast(new_entry)
+        new_entry = parse.Command("LeaderAppend", [cluster_node.commit_index, params[0], params[1]])
 
-        new_entry = parse.Command("AppendEntries!", [cluster_node.commit_index, params[0], params[1]], False)
-        if cluster_node.isLeader():
-            return AppendEntries(new_entry, cluster_node)
+        return AppendEntries(new_entry, cluster_node)
 
-        else:
-            return None
+    else:
+        return None
 
 
 # Returns either value at index, or Success!/Failed!
@@ -56,8 +55,16 @@ def AppendEntries(command, cluster_node):
     log = open("log.txt", 'r+')
     params = command.getParams()
 
-    # Need to make sure that the commit index is the same as the followers
-    assert cluster_node.commit_index == int(params[0])
+
+
+    print("This node's index: ", cluster_node.commit_index)
+    print("Leaders index: ", int(params[0]))
+
+    # Need to make sure that the commit index is the same as the leader
+    if cluster_node.commit_index != int(params[0]):
+        # Replicate log and set commit_index
+
+        return parse.Command("print", ["Failed!"])
 
     # Copy file contents into a string
     contents = ""
@@ -84,6 +91,8 @@ def AppendEntries(command, cluster_node):
     else:
         # New value to be added to the beginning of the file
         # Edit string and write to the file
+        cluster_node.commit_index += 1
+
         new_contents = params[1] + ':' + params[2] + '\n'
 
         for i in range(0, len(contents)):
@@ -95,10 +104,10 @@ def AppendEntries(command, cluster_node):
             log.close()
 
         except IOError:
-            if command.getCommand() == "AppendEntries!":
+            if command.getCommand() == "LeaderAppend":
                 return parse.Command("print", ["Failed!"])
 
-    if command.getCommand() == "AppendEntries!":
+    if command.getCommand() == "LeaderAppend":
         return parse.Command("print", ["Success!"])
 
 
@@ -128,10 +137,21 @@ def dumpLog(command, cluster_node):
         contents += "\n\tOLDEST INDEX (BOTTOM)\n"
 
         return parse.Command("print", [contents, original_id])
+
     elif cluster_node.isLeader():
-        logRequest = parse.Command("LogRequest", [id, original_id])
-        cluster_node.broadcast(logRequest)
-        return None
+        isFollower = False
+
+        for ip in cluster_node.follower_ips:
+            if ip == id:
+                isFollower = True
+
+        if isFollower:
+            logRequest = parse.Command("LogRequest", [id, original_id])
+            cluster_node.broadcast(logRequest)
+
+            return None
+        else:
+            return parse.Command("print", ["Failed!"])
     else:
         return None
 
