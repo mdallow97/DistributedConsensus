@@ -17,7 +17,7 @@ class Candidate(threading.Thread):
         for cand_port in self.cluster_node.candidate_ports:
             addr = [cand_port[0], cand_port[1]]
             if self_address != addr:
-                print("My port: ", self.cluster_node.port, "\tFollower port: ", cand_port[2])
+
                 self.s.connect((cand_port[0], cand_port[2]))
                 self.s.send(pickle.dumps(parse.Command("RequestVote", [self.cluster_node.current_term, self_address])))
 

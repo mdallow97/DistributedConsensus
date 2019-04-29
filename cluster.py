@@ -130,11 +130,11 @@ class ClusterNode:
 
 	def getTimeout(self):
 		if self.isLeader():
-			return 10 # 60 #seconds
+			return 60 # 60 #seconds
 		elif (self.state == "candidate"):
-			return 30 # seconds
+			return 10 # seconds
 		elif (self.state == "follower"):
-			return 10#31
+			return 31#31
 		else:
 			print("Invalid state on server with IP ", self.IP)
 			exit()

@@ -125,5 +125,5 @@ class Leader(threading.Thread):
     def heartbeatTimer(self):
         heartbeat_cmd = parse.Command("heartbeat", [self.cluster_node.follower_addrs, self.cluster_node.candidate_ports])
         while not self.shouldEnd:
-            sleep(7) # should be 30 seconds
+            sleep(30) # should be 30 seconds
             self.cluster_node.broadcast(heartbeat_cmd)
