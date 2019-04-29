@@ -70,23 +70,7 @@ class ClusterNode:
 			time.sleep(self.getTimeout())
 
 			# If the node is a leader, and it times out
-			if self.isLeader():
-				continue # GET RID OF THIS SO THAT LEADER TIMES OUT
-
-				# End leader thread
-				self.node_thread.end()
-				self.node_thread.join()
-				self.state = "follower"
-
-				print("I am no longer the leader")
-
-				# Prepare new socket, and start follower thread
-				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				self.node_thread = follower.Follower(s, self)
-				self.node_thread.start()
-				continue
-
-			else:
+			if not self.isLeader():
 				# Start a new election if timeout and havent received a heartbeat
 				if self.rcvdHeartbeat:
 					self.rcvdHeartbeat = False
@@ -109,7 +93,7 @@ class ClusterNode:
 
 	def getTimeout(self):
 		if self.isLeader():
-			return 10 # 60 #seconds
+			return 60 # 60 #seconds
 		elif (self.state == "candidate"):
 			return 10 # seconds
 		elif (self.state == "follower"):
