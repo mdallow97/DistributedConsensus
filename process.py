@@ -25,6 +25,9 @@ def processCommand(command, cluster_node, addr=None):
         # AppendEntries(<index>, !<var>) or AppendEntries(<index>, <var>, <value>)
         return AppendEntries(command, cluster_node)
 
+    elif command.getCommand() == "candidatePort":
+        return CandidatePort(command, cluster_node)
+
 
 
 # Returns Success! or Failed!
@@ -106,11 +109,6 @@ def AppendEntries(command, cluster_node):
         return parse.Command("print", ["Success!"])
 
 
-def RequestVote(command, cluster_node):
-    # RequestVote(<term>, <id>)
-    print("vote")
-
-
 def dumpLog(command, cluster_node):
     # dumpLog(<id>)
     id = command.getParams()[0]
@@ -157,3 +155,28 @@ def ReturnLog(command, cluster_node, addr):
         return
     else:
         return params[0]
+
+
+def CandidatePort(command, cluster_node):
+    addr = [command.getParams()[0], command.getParams()[1]]
+
+    # Format: [original_ip, original_port, candidate_port] = addr1
+    # cluster_node.candidate_ports = [addr1, addr2, addr3]
+    candidate_port = [command.getParams()[0], command.getParams()[1], command.getParams()[2]]
+
+    ip = command.getParams()[0]
+    isAnotherFollower = False
+    for follower in cluster_node.follower_ips:
+        if ip == follower:
+            isAnotherFollower = True
+
+    if not isAnotherFollower:
+        return None
+
+    cluster_node.candidate_ports.append(candidate_port)
+
+
+
+def RequestVote(command, cluster_node):
+    # RequestVote(<term>, <id>)
+    print("vote")

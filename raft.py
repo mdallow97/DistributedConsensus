@@ -15,7 +15,7 @@ if len(sys.argv) < 2:
 
 if len(sys.argv) == 2:
     # Only possibility: P1 <follower_IP>
-    node = cluster.ClusterNode(host, 0, "leader", sys.argv[1])
+    node = cluster.ClusterNode(host, 0, "leader", [sys.argv[1]])
 
 elif len(sys.argv) == 3:
     # can be either follower or leader command
@@ -36,7 +36,7 @@ elif len(sys.argv) == 3:
 # If it is none of the above, then it is a leader with a list of follower IPs
 else:
     followers = []
-    for i in range(1,len(sys.argv)-1):
-        followers.append(sys.argv[i])
+    for follower in sys.argv:
+        followers.append(follower)
 
     node = cluster.ClusterNode(host, 0, "leader", followers)

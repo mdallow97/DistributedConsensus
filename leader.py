@@ -3,6 +3,7 @@ import threading
 import process
 import parse
 import socket, pickle
+from time import sleep
 
 class Leader(threading.Thread):
     def __init__(self, s, cluster_node):
@@ -11,11 +12,9 @@ class Leader(threading.Thread):
         self.s = s
         self.cluster_node = cluster_node
         self.shouldEnd = False
+        self.client_threads = []
 
         threading.Thread.__init__(self)
-
-        # Heartbeat thread handles broadcasting the heartbeat to all followers
-        heartbeat_thread 	= threading.Thread(target=self.heartbeatTimer)
 
 
     def end(self):
@@ -24,12 +23,19 @@ class Leader(threading.Thread):
     # This thread is responsible for handling new clients and broadcasting the heartbeat
     def run(self):
 
+        # Heartbeat thread handles broadcasting the heartbeat to all followers
+        heartbeat_thread 	= threading.Thread(target=self.heartbeatTimer)
+        heartbeat_thread.start()
+
         # Initialize incoming TCP connections
-        self.s.bind((self.cluster_node.IP, self.cluster_node.port))
+        self.s.bind((self.cluster_node.leader_IP, self.cluster_node.leader_port))
+
         self.cluster_node.port = self.s.getsockname()[1]
+        self.leader_port = self.cluster_node.port
+
         self.s.listen(5) # number of connections to server
 
-        print("Connection IP address: ", self.cluster_node.IP)
+        print("Connection IP address: ", self.cluster_node.leader_IP)
         print("Connection opened on port: ", self.s.getsockname()[1])
 
         # Handles new connections until it should end
@@ -37,6 +43,21 @@ class Leader(threading.Thread):
             # Accept connection
             conn, addr = self.s.accept()
             print("Connection from address:", addr)
+
+
+            isFollowerIP = False
+            for ip in self.cluster_node.follower_ips:
+                if ip == addr[0]:
+                    isFollowerIP = True
+                    break
+
+            # Follower info replication
+            if isFollowerIP:
+                self.cluster_node.follower_addrs.append(addr)
+            else:
+                print("Invalid IP")
+                conn.send(pickle.dumps(parse.Command("invalidip")))
+                break
 
             # Log replication for new followers
             log = open("log.txt", 'r')
@@ -52,11 +73,14 @@ class Leader(threading.Thread):
 
             # Handles adding clients and receiving messages
             add_client_thread = threading.Thread(target=self.receiveFromClient, args=(conn, addr))
-
+            self.client_threads.append(add_client_thread)
             add_client_thread.start()
 
+        heartbeat_thread.join()
+        for thread in self.client_threads:
+            thread.join()
 
-        add_client_thread.join()
+
         conn.close()
         print("Connection closed")
 
@@ -99,7 +123,7 @@ class Leader(threading.Thread):
 
     # Sends out heartbeat to all followers
     def heartbeatTimer(self):
-        heartbeat_cmd = parse.Command("heartbeat", self.cluster_node.follower_ips)
+        heartbeat_cmd = parse.Command("heartbeat", [self.cluster_node.follower_addrs, self.cluster_node.candidate_ports])
         while not self.shouldEnd:
-            time.sleep(7) # should be 30 seconds
+            sleep(7) # should be 30 seconds
             self.cluster_node.broadcast(heartbeat_cmd)

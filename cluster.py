@@ -4,29 +4,34 @@ import time
 import parse
 import leader
 import follower
+import candidate
+import subprocess, signal
 
 class ClusterNode:
 
 	def __init__(self, IP, port, state, follower_ips):
 		# Initialize class variables
-		self.IP 			= IP
-		self.port			= port
-		self.state 			= state
-		self.current_term 	= 1
-		# self.votedFor 		= null
-		self.commit_index 	= 0
-		self.current_commit = None
-		self.BUFFER_SIZE 	= 1024
-		self.followers 		= []
-		self.follower_ips	= []
-		self.shouldEnd 		= False
-		self.rcvdHeartbeat	= False
-		self.node_thread	= None
+		self.leader_IP 			= IP
+		self.leader_port		= port
+		self.IP 				= socket.gethostbyname(socket.gethostname())
+		self.port 				= 0
+		self.state 				= state
+		self.current_term 		= 1
+		self.votedFor 			= 0
+		self.commit_index 		= 0
+		self.current_commit 	= None
+		self.BUFFER_SIZE 		= 1024
+		self.followers 			= []
+		self.follower_addrs 	= []
+		self.candidate_ports 	= []
+		self.follower_ips		= []
+		self.shouldEnd 			= False
+		self.rcvdHeartbeat		= False
+		self.node_thread		= None
 
 
 		for flr in follower_ips:
 			self.follower_ips.append(flr)
-		self.follower_ips.append(self.IP)
 
 		# Erase file
 		log			= open("log.txt", 'w')
@@ -38,6 +43,7 @@ class ClusterNode:
 
 		# Initialize node type (leader or follower)
 		if self.isLeader():
+			self.port = self.leader_port
 			self.node_thread = leader.Leader(s, self)
 			self.rcvdHeartbeat = True
 		else:
@@ -71,8 +77,7 @@ class ClusterNode:
 
 			# If the node is a leader, and it times out
 			if self.isLeader():
-				continue # GET RID OF THIS SO THAT LEADER TIMES OUT
-
+				continue
 				# End leader thread
 				self.node_thread.end()
 				self.node_thread.join()
@@ -94,26 +99,42 @@ class ClusterNode:
 
 				else:
 					# start new election
+					self.node_thread.raise_exception()
+					self.node_thread.join()
 					self.newElection()
 
 
 	def newElection(self):
+		print("starting new election")
 		self.state = "candidate"
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.current_term = self.current_term + 1
 
-		self.node_thread.join()
+		# self.node_thread.join()
 		self.node_thread = candidate.Candidate(s, self)
+		self.node_thread.start()
+		self.node_thread.join()
 
+		print("Election ends with ", self.votedFor, " votes")
+
+		if self.votedFor > (len(self.follower_ips) -1)/2:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+			self.node_thread = leader.Leader(s, self)
+			self.leader_IP = self.IP
+			self.leader_port = self.port
+		else:
+			self.newElection()
+
+		self.node_thread.start()
 
 
 	def getTimeout(self):
 		if self.isLeader():
 			return 10 # 60 #seconds
 		elif (self.state == "candidate"):
-			return 10 # seconds
+			return 30 # seconds
 		elif (self.state == "follower"):
-			return 31
+			return 10#31
 		else:
 			print("Invalid state on server with IP ", self.IP)
 			exit()
